@@ -43,7 +43,7 @@ public class Main {
                     try {
                         File naoProcessados = new File(caminhoNaoProcessados);
                         Files.createDirectories(naoProcessadosDiretorio);
-                        System.out.println("Diretório " + caminhoPasta + " criado com sucesso!");
+                        System.out.println("Diretório " + caminhoPasta + " criado com sucesso!\n");
                     } catch (Exception e) {
                         System.out.println("Falha ao criar o diretório" + nomePasta + ": " + e.getMessage());
                     }
@@ -120,14 +120,14 @@ public class Main {
                             }
 
                             if (linha.startsWith("09")) {
-                                String linhasConexexoesPesos = linha.substring(2, 13);
+                                String linhasConexoesPesos = linha.substring(2);
 
-                                String[] linhasConexoesPesosDivididos = linhasConexexoesPesos.split(";");
+                                String[] linhasConexoesPesosDivididos = linhasConexoesPesos.split(";");
 
                                 String quantidadeDeLinhasConexeos = linhasConexoesPesosDivididos[0].split("=")[1].trim();
                                 String quantidadeDeLinhasPesos = linhasConexoesPesosDivididos[1].split("=")[1].trim();
 
-                                String somaPesosTodosNos = linhasConexexoesPesos.substring(14);
+                                String somaPesosTodosNos = linhasConexoesPesosDivididos[2];
 
                                 if (Integer.parseInt(quantidadeDeLinhasConexeos) != grafo.getConexoes().length ||
                                         Integer.parseInt(quantidadeDeLinhasPesos) != grafo.getConexoes().length) {
