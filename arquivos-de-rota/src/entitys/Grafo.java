@@ -1,3 +1,5 @@
+package entitys;
+
 public class Grafo {
 
     private Integer nosTotaisDoGrafo;

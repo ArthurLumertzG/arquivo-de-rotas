@@ -1,3 +1,5 @@
+package entitys;
+
 public class Conexao {
 
     private Integer noDeOrigem;

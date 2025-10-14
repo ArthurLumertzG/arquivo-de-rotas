@@ -1,3 +1,4 @@
+import entitys.Conexao;
 import utils.FileUtils;
 
 import java.io.File;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import entitys.*;
 
 public class Main {
     public static void main(String[] args) throws IOException {
@@ -16,7 +18,15 @@ public class Main {
         String caminhoProcessados = null;
         String caminhoNaoProcessados = null;
         String caminhoRotas = "C:/Teste/rota";
+        String caminhoConfig = "C:/Teste/Configuracao/config.txt";
         List<String> linhasConfig = new ArrayList<String>();
+
+        String validaConfig = FileUtils.validateConfig(caminhoConfig);
+        if ( validaConfig != null ){
+            System.out.println("\n" + validaConfig);
+            return;
+        }
+        System.out.println("\nTudo correto com o arquivo config.txt");
         linhasConfig = FileUtils.readAllLines("C:/Teste/Configuracao/config.txt");
 
         for (String linha : linhasConfig) {
@@ -139,6 +149,7 @@ public class Main {
                                 }
                             }
                         });
+
 
                         System.out.println("Rota " + rotaIndex + " processada com sucesso!");
                         Path origem = Paths.get(caminhoRotas + rotaIndex + ".txt");

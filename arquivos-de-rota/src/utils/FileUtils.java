@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import entitys.*;
 
 /**
  * Read All Lines of file
@@ -81,5 +82,46 @@ public class FileUtils {
      */
     public static boolean deleteFile(String filePath) throws IOException {
         return Files.deleteIfExists(Path.of(filePath));
+    }
+
+    /**
+     * Validate the file config.txt
+     * @param filePath
+     *          Path of config.txt
+     * @return
+     *          The error or null
+     * @throws IOException
+     *          Signals thta o I/O of dome dort has occurred
+     */
+    public static String validateConfig(String configPath) throws IOException {
+
+        List<String> linhasConfig = new ArrayList<String>();
+
+        if (!Files.exists(Path.of(configPath))) {
+            return "Arquivo config.txt não encontrado em -> " + configPath;
+        }
+
+        linhasConfig = FileUtils.readAllLines(configPath);
+        List<String> linhasValidas = new ArrayList<String>();
+
+        for (String linha : linhasConfig) {
+            if (linha.contains("@") && !linha.contains("=")) {
+                return "Há um erro de digitação em config.txt";
+            }
+
+            if (!linha.trim().equals("") || !linha.trim().isEmpty()) {
+                linhasValidas.add(linha);
+            }
+        }
+
+        if (linhasValidas.isEmpty()) {
+            return "Arquivo config.txt está em branco";
+        }
+
+        if (linhasValidas.size() < 2) {
+            return "Há linha(s) faltando em config.txt";
+        }
+
+        return null;
     }
 }
