@@ -1,4 +1,4 @@
-import entitys.Conexao;
+import entities.Conexao;
 import utils.FileUtils;
 
 import java.io.File;
@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import entitys.*;
+
+import entities.*;
 
 public class Main {
     public static void main(String[] args) throws IOException {
@@ -22,7 +23,7 @@ public class Main {
         List<String> linhasConfig = new ArrayList<String>();
 
         String validaConfig = FileUtils.validateConfig(caminhoConfig);
-        if ( validaConfig != null ){
+        if (validaConfig != null) {
             System.out.println("\n" + validaConfig);
             return;
         }
@@ -73,99 +74,40 @@ public class Main {
 
             executorThreads.submit(() -> {
                 try {
-                    List<String> linhasRota = null;
-                    if (Files.exists(Path.of(caminhoRotas + rotaIndex + ".txt")) && Files.isRegularFile(Path.of(caminhoRotas + rotaIndex + ".txt"))) {
-                        linhasRota = FileUtils.readAllLines(caminhoRotas + rotaIndex + ".txt");
+                    Path origemPath = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
+                    if (Files.exists(origemPath) && Files.isRegularFile(origemPath)) {
+                        List<String> linhasRota = FileUtils.readAllLines(origemPath.toString());
 
-                        Grafo grafo = new Grafo();
+                        // valida o arquivo por completo (header, 01, 02, trailer e somas)
+                        String validaRota = FileUtils.validateRotaFile(linhasRota);
 
-                        linhasRota.forEach((linha) -> {
-                            if (linha.isEmpty()) {
-                                return;
-                            }
-                            if (linha.startsWith("00")) {
-                                Integer nosTotaisDoGrafo = Integer.parseInt(linha.substring(2, 4));
-                                Integer somaPesosArestas = Integer.parseInt(linha.substring(4));
+                        if (validaRota != null) {
+                            // validação falhou, mover para Não Processado
 
-                                if (somaPesosArestas > 99999) {
-                                    throw new Error();
-                                }
-
-                                grafo.setNosTotaisDoGrafo(nosTotaisDoGrafo);
-                                grafo.setSomaPesosDasArestas(somaPesosArestas);
-                            }
-
-                            if (linha.startsWith("01")) {
-                                String[] nosOrigemAteDestino = (linha.substring(2, 7)).split("=");
-
-                                Integer nosOrigem = Integer.parseInt(nosOrigemAteDestino[0].trim());
-                                Integer nosDestino = Integer.parseInt(nosOrigemAteDestino[1].trim());
-
-                                Conexao conexao = new Conexao();
-                                conexao.setNoDeOrigem(nosOrigem);
-                                conexao.setNoDeDestino(nosDestino);
-
-                                grafo.addConexoes(conexao);
-                            }
-
-                            if (linha.startsWith("02")) {
-                                String[] nosOrigemAteDestino = ((linha.substring(2, 7)).trim()).split("=");
-
-                                Integer nosOrigem = Integer.parseInt(nosOrigemAteDestino[0].trim());
-                                Integer nosDestino = Integer.parseInt(nosOrigemAteDestino[1].trim());
-                                Integer pesoDaAresta = Integer.parseInt(linha.substring(8).trim());
-
-                                if (pesoDaAresta > 9999) {
-                                    throw new Error();
-                                }
-
-                                Conexao[] grafoConexoes = grafo.getConexoes();
-
-                                for (Conexao conexao : grafoConexoes) {
-                                    if (conexao.getNoDeOrigem().equals(nosOrigem) && conexao.getNoDeDestino().equals(nosDestino)) {
-                                        conexao.setPesoDaConexao(pesoDaAresta);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (linha.startsWith("09")) {
-                                String linhasConexoesPesos = linha.substring(2);
-
-                                String[] linhasConexoesPesosDivididos = linhasConexoesPesos.split(";");
-
-                                String quantidadeDeLinhasConexeos = linhasConexoesPesosDivididos[0].split("=")[1].trim();
-                                String quantidadeDeLinhasPesos = linhasConexoesPesosDivididos[1].split("=")[1].trim();
-
-                                String somaPesosTodosNos = linhasConexoesPesosDivididos[2];
-
-                                if (Integer.parseInt(quantidadeDeLinhasConexeos) != grafo.getConexoes().length ||
-                                        Integer.parseInt(quantidadeDeLinhasPesos) != grafo.getConexoes().length) {
-                                    throw new Error();
-                                }
-
-                                if (Integer.parseInt(somaPesosTodosNos) != grafo.getSomaPesosDasArestas()) {
-                                    throw new Error();
-                                }
-                            }
-                        });
-
-
-                        System.out.println("Rota " + rotaIndex + " processada com sucesso!");
-                        Path origem = Paths.get(caminhoRotas + rotaIndex + ".txt");
-                        Path destinoProcessado = Paths.get(finalCaminhoProcessados + "/rota" + rotaIndex + ".txt");
-                        Files.move(origem, destinoProcessado);
-
+                            Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
+                            Files.move(origemPath, destinoNaoProcessado);
+                            System.out.println("Arquivo rota" + rotaIndex + ".txt inválido. Motivo: " + validaRota);
+                        } else {
+                            // tudo certo, mover para Processado
+                            Path destinoProcessado = Paths.get(finalCaminhoProcessados + "/rota" + rotaIndex + ".txt");
+                            Files.move(origemPath, destinoProcessado);
+                            System.out.println("Rota " + rotaIndex + " processada com sucesso!");
+                        }
                     } else {
-                        Path origemErro = Paths.get(caminhoRotas + rotaIndex + ".txt");
-                        Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                        Files.move(origemErro, destinoNaoProcessado);
+                        // arquivo não existe ou não está correto, mover (se existir) para Não Processado
+                        Path origemErro = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
+                        if (Files.exists(origemErro)) {
+                            Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
+                            Files.move(origemErro, destinoNaoProcessado);
+                        }
                     }
                 } catch (Exception e) {
                     try {
-                        Path origemErro = Paths.get(caminhoRotas + rotaIndex + ".txt");
+                        Path origemErro = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
                         Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                        Files.move(origemErro, destinoNaoProcessado);
+                        if (Files.exists(origemErro)) {
+                            Files.move(origemErro, destinoNaoProcessado);
+                        }
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }
