@@ -78,7 +78,7 @@ public class Main {
                     if (Files.exists(origemPath) && Files.isRegularFile(origemPath)) {
                         List<String> linhasRota = FileUtils.readAllLines(origemPath.toString());
 
-                        // valida o arquivo por completo (header, 01, 02, trailer e somas)
+                        // valida o arquivo por completo (header, 01, 02, trailer e somas (conexoes e pesos))
                         String validaRota = FileUtils.validateRotaFile(linhasRota);
 
                         if (validaRota != null) {
