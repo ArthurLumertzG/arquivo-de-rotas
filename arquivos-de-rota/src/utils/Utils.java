@@ -255,6 +255,103 @@ public class Utils {
         executorThreads.shutdown();
     }*/
 
+    public static String arquivoConfig(String configPath) throws IOException {
+
+        List<String> linhasConfig = new ArrayList<String>();
+
+        if (!Files.exists(Path.of(configPath))) {
+            return "Arquivo config.txt não encontrado em -> " + configPath;
+        }
+
+        linhasConfig = Utils.readAllLines(configPath);
+        List<String> linhasValidas = new ArrayList<String>();
+
+        for (String linha : linhasConfig) {
+            if (linha.contains("@") && !linha.contains("=")) {
+                return "Há um erro de digitação em config.txt";
+            }
+
+            if (!linha.trim().equals("") && !linha.trim().isEmpty()) {
+                linhasValidas.add(linha);
+            }
+        }
+
+        if (linhasValidas.isEmpty()) {
+            return "Arquivo config.txt está em branco";
+        }
+
+        if (linhasValidas.size() < 4) {
+            return "Há linha(s) faltando em config.txt";
+        }
+
+        for (String linha : linhasConfig) {
+            if (linha.startsWith("Rotas=")) {
+                String caminhoRotas = linha.substring("Rotas=".length()).trim();
+                Path pathRotas = Path.of(caminhoRotas);
+                if (!Files.exists(pathRotas)) {
+                    try {
+                        Files.createDirectories(pathRotas);
+                        return "Pasta Rotas criada: " + caminhoRotas;
+                    } catch (IOException e) {
+                        System.err.println("Erro ao criar pasta Rotas: " + e.getMessage());
+                    }
+                }
+            }
+
+            if (linha.startsWith("Processado=")) {
+                String caminhoProcessado = linha.substring("Processado=".length()).trim();
+                Path pathProcessado = Path.of(caminhoProcessado);
+                if (!Files.exists(pathProcessado)) {
+                    try {
+                        Files.createDirectories(pathProcessado);
+                        return "Pasta Processado criada: " + caminhoProcessado;
+                    } catch (IOException e) {
+                        System.err.println("Erro ao criar pasta Processado: " + e.getMessage());
+                    }
+                }
+            }
+
+            if (linha.startsWith("NaoProcessado=")) {
+                String caminhoNaoProcessado = linha.substring("NaoProcessado=".length()).trim();
+                Path pathNaoProcessado = Path.of(caminhoNaoProcessado);
+                if (!Files.exists(pathNaoProcessado)) {
+                    try {
+                        Files.createDirectories(pathNaoProcessado);
+                        return "Pasta NaoProcessado criada: " + caminhoNaoProcessado;
+                    } catch (IOException e) {
+                        System.err.println("Erro ao criar pasta NaoProcessado: " + e.getMessage());
+                    }
+                }
+            }
+
+            if (linha.startsWith("Automatico=")) {
+                String valorAutomatico = linha.substring("Automatico=".length()).trim();
+                boolean automatico = valorAutomatico.equalsIgnoreCase("Sim");
+                return "Modo automático: " + (automatico ? "Sim" : "Não");
+                // Você pode armazenar este valor em uma variável da classe ou usar conforme necessário
+            }
+        }
+
+        return null;
+    }
+
+
+    public static String procuraConfig () throws IOException {
+
+        String resposta = null;
+        String config = "C:\\Configuracoes\\config";
+        Path caminhoConfig = Paths.get(config + ".txt");
+
+        if (Files.exists(caminhoConfig)) {
+
+            validateConfig("C:\\Rotas", "C:\\Teste\\Processado", "C:\\Teste\\NaoProcessado", true);
+
+            resposta = arquivoConfig(String.valueOf(caminhoConfig));
+            return "Configuração pré-definida encontrada!\nPode ser alterado em " + caminhoConfig;
+        }
+        return null;
+    }
+
     public static boolean criaConfig (String pasta, String sucesso, String erro, boolean rotaAutomatica) throws IOException {
 
         if ( validateConfig(pasta, sucesso, erro, rotaAutomatica) == null ) {
@@ -311,12 +408,4 @@ public class Utils {
     public static String buscarDiretorio() {
         return null;
     }
-
-    /*
-    private void processar() {
-        JOptionPane.showMessageDialog(this,
-                "Processando algoritmo de Dijkstra...",
-                "Processar",
-                JOptionPane.INFORMATION_MESSAGE);
-    }*/
 }

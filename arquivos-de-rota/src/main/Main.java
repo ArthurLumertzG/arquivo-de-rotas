@@ -1,6 +1,7 @@
 package main;
 
 import utils.Utils;
+import view.ConfigView;
 import view.MainView;
 
 import javax.swing.*;
@@ -17,8 +18,23 @@ import java.util.concurrent.Executors;
 public class Main {
     public static void main(String[] args) throws IOException {
         SwingUtilities.invokeLater(() -> {
-            MainView frame = new MainView();
-            frame.setVisible(true);
+
+            try {
+                if (Utils.procuraConfig() != null){
+                    MainView mainView = new MainView();
+                    mainView.setVisible(true);
+
+                    String resposta = Utils.procuraConfig();
+                    JOptionPane.showMessageDialog(mainView, resposta);
+                } else {
+                    MainView mainView = new MainView();
+                    mainView.setVisible(true);
+                    ConfigView configView = new ConfigView();
+                    configView.setVisible(true);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 }
