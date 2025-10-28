@@ -6,6 +6,12 @@ public class Conexao {
     private Integer noDeDestino;
     private Integer pesoDaConexao;
 
+    public Conexao(Integer noDeOrigem, Integer noDeDestino, Integer pesoDaConexao) {
+        this.noDeOrigem = noDeOrigem;
+        this.noDeDestino = noDeDestino;
+        this.pesoDaConexao = pesoDaConexao;
+    }
+
     public Integer getNoDeOrigem() {
         return noDeOrigem;
     }

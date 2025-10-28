@@ -2,6 +2,8 @@ package entities;
 
 public class Config {
 
+    private static Config config;
+
     private String pasta;
     private String sucesso;
     private String erro;
@@ -14,8 +16,20 @@ public class Config {
         this.automatico = automatico;
     }
 
-    public String getPasta() {
-        return pasta;
+    public static Config iniciaConfig(String pasta, String sucesso, String erro, boolean automatico) {
+        config = new Config(pasta, sucesso, erro, automatico);
+        return config;
+    }
+
+    public static Config getConfig() {
+        if (config == null) {
+            throw new IllegalStateException("Config não foi inicializada. Use iniciaConfig primeiro.");
+        }
+        return config;
+    }
+
+    public static String getPasta() {
+        return config.pasta;
     }
 
     public void setPasta(String pasta) {

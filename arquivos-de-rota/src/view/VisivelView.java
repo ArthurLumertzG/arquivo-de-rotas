@@ -35,11 +35,11 @@ class VisivelView extends JFrame {
         lblBuscar.setBounds(85, 70, 60, 25);
         mainPanel.add(lblBuscar);
 
-        JTextField txtBuscar = new JTextField();
-        txtBuscar.setBounds(140, 70, 305, 26);
-        txtBuscar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        txtBuscar.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(txtBuscar);
+        JTextField txfBuscar = new JTextField();
+        txfBuscar.setBounds(140, 70, 305, 26);
+        txfBuscar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txfBuscar.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(txfBuscar);
 
         JButton btnBuscar = new JButton("Buscar");
         btnBuscar.setBounds(455, 70, 90, 26);
@@ -47,7 +47,7 @@ class VisivelView extends JFrame {
         btnBuscar.setFocusPainted(false);
         btnBuscar.setBackground(new Color(240, 240, 240));
         btnBuscar.setBorder(BorderFactory.createLineBorder(new Color(160, 160, 160), 1));
-        btnBuscar.addActionListener(e -> Utils.buscarDiretorio());
+        btnBuscar.addActionListener(e -> Utils.buscarDiretorio(txfBuscar.getText()));
         mainPanel.add(btnBuscar);
 
         JButton btnEscolher = new JButton("Escolher");
@@ -64,7 +64,7 @@ class VisivelView extends JFrame {
 
             if (retorno == JFileChooser.APPROVE_OPTION) {
                 File pastaSelecionada = fcEscolher.getSelectedFile();
-                txtBuscar.setText(pastaSelecionada.getAbsolutePath());
+                txfBuscar.setText(pastaSelecionada.getAbsolutePath());
                 System.out.println("Pasta selecionada: " + pastaSelecionada.getAbsolutePath());
             } else {
                 System.out.println("Nenhuma pasta foi selecionada.");
@@ -77,22 +77,22 @@ class VisivelView extends JFrame {
         lblCodigoOrigem.setBounds(85, 115, 60, 25);
         mainPanel.add(lblCodigoOrigem);
 
-        JTextField txtCodigoOrigem = new JTextField();
-        txtCodigoOrigem.setBounds(140, 115, 75, 26);
-        txtCodigoOrigem.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        txtCodigoOrigem.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(txtCodigoOrigem);
+        JTextField txfCodigoOrigem = new JTextField();
+        txfCodigoOrigem.setBounds(140, 115, 75, 26);
+        txfCodigoOrigem.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txfCodigoOrigem.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(txfCodigoOrigem);
 
         JLabel lblCidadeOrigem = new JLabel("Cidade:");
         lblCidadeOrigem.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblCidadeOrigem.setBounds(238, 115, 60, 25);
         mainPanel.add(lblCidadeOrigem);
 
-        JTextField txtCidadeOrigem = new JTextField();
-        txtCidadeOrigem.setBounds(293, 115, 152, 26);
-        txtCidadeOrigem.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        txtCidadeOrigem.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(txtCidadeOrigem);
+        JTextField txfCidadeOrigem = new JTextField();
+        txfCidadeOrigem.setBounds(293, 115, 152, 26);
+        txfCidadeOrigem.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txfCidadeOrigem.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(txfCidadeOrigem);
 
         JLabel lblOrigem = new JLabel("(ORIGEM)");
         lblOrigem.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -105,22 +105,22 @@ class VisivelView extends JFrame {
         lblCodigoDestino.setBounds(85, 155, 60, 25);
         mainPanel.add(lblCodigoDestino);
 
-        JTextField txtCodigoDestino = new JTextField();
-        txtCodigoDestino.setBounds(140, 155, 75, 26);
-        txtCodigoDestino.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        txtCodigoDestino.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(txtCodigoDestino);
+        JTextField txfCodigoDestino = new JTextField();
+        txfCodigoDestino.setBounds(140, 155, 75, 26);
+        txfCodigoDestino.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txfCodigoDestino.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(txfCodigoDestino);
 
         JLabel lblCidadeDestino = new JLabel("Cidade:");
         lblCidadeDestino.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblCidadeDestino.setBounds(238, 155, 60, 25);
         mainPanel.add(lblCidadeDestino);
 
-        JTextField txtCidadeDestino = new JTextField();
-        txtCidadeDestino.setBounds(293, 155, 152, 26);
-        txtCidadeDestino.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        txtCidadeDestino.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(txtCidadeDestino);
+        JTextField txfCidadeDestino = new JTextField();
+        txfCidadeDestino.setBounds(293, 155, 152, 26);
+        txfCidadeDestino.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txfCidadeDestino.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(txfCidadeDestino);
 
         JLabel lblDestino = new JLabel("(DESTINO)");
         lblDestino.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -133,11 +133,11 @@ class VisivelView extends JFrame {
         lblKM.setBounds(105, 195, 40, 25);
         mainPanel.add(lblKM);
 
-        JTextField txtKM = new JTextField();
-        txtKM.setBounds(140, 195, 75, 26);
-        txtKM.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        txtKM.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(txtKM);
+        JTextField txfKM = new JTextField();
+        txfKM.setBounds(140, 195, 75, 26);
+        txfKM.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txfKM.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(txfKM);
 
         JButton btnAdicionar = new JButton("+");
         btnAdicionar.setBounds(620, 195, 45, 26);
@@ -145,7 +145,7 @@ class VisivelView extends JFrame {
         btnAdicionar.setFocusPainted(false);
         btnAdicionar.setBackground(new Color(240, 240, 240));
         btnAdicionar.setBorder(BorderFactory.createLineBorder(new Color(160, 160, 160), 1));
-        //btnAdicionar.addActionListener( );
+        btnAdicionar.addActionListener( e -> Utils.adicionar(txfCodigoOrigem.getText(), txfCidadeOrigem.getText(), txfCodigoDestino.getText(), txfCidadeDestino.getText(), txfKM.getText()));
         mainPanel.add(btnAdicionar);
 
         String[] colunas = {"Código Origem", "Cidade Origem", "Código Destino", "Cidade Destino", "Distância"};
