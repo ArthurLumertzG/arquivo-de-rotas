@@ -1,7 +1,13 @@
 package entities;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class Conexao {
 
+    public static final List<Conexao> listaConexoes = new ArrayList<>();
     private Integer noDeOrigem;
     private Integer noDeDestino;
     private Integer pesoDaConexao;
@@ -10,29 +16,31 @@ public class Conexao {
         this.noDeOrigem = noDeOrigem;
         this.noDeDestino = noDeDestino;
         this.pesoDaConexao = pesoDaConexao;
+
+        listaConexoes.add(this);
     }
 
-    public Integer getNoDeOrigem() {
+    public Integer getNoOrigem() {
         return noDeOrigem;
     }
 
-    public void setNoDeOrigem(Integer noDeOrigem) {
+    public void setNoOrigem(Integer noDeOrigem) {
         this.noDeOrigem = noDeOrigem;
     }
 
-    public Integer getNoDeDestino() {
+    public Integer getNoDestino() {
         return noDeDestino;
     }
 
-    public void setNoDeDestino(Integer noDeDestino) {
+    public void setNoDestino(Integer noDeDestino) {
         this.noDeDestino = noDeDestino;
     }
 
-    public Integer getPesoDaConexao() {
+    public Integer getPesoConexao() {
         return pesoDaConexao;
     }
 
-    public void setPesoDaConexao(Integer pesoDaConexao) {
+    public void setPesoConexao(Integer pesoDaConexao) {
         this.pesoDaConexao = pesoDaConexao;
     }
 }

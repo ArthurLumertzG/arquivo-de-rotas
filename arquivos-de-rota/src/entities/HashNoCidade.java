@@ -1,14 +1,11 @@
 package entities;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class HashNoCidade {
 
-    static HashMap<Integer, String> mapNoCidade = new HashMap<>();
-
-    public static HashMap<Integer, String> getMapNoCidade() {
-        return mapNoCidade;
-    }
+     public static final Map<Integer, String> mapaNoCidade = new HashMap<>();
 
     public static boolean confereNo (Integer no, String cidade, HashMap<Integer, String> map) {
 
@@ -22,7 +19,7 @@ public class HashNoCidade {
         return false;
     }
 
-    public static void criaNoCidade (Integer no, String cidade, HashMap<Integer, String> map) {
-        map.put(no, cidade);
+    public static void criaNoCidade (Integer no, String cidade) {
+        mapaNoCidade.put(no, cidade);
     }
 }

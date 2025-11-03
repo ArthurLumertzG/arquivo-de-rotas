@@ -1,9 +1,10 @@
 package view;
 
+import utils.Utils;
+
 import javax.swing.*;
 import java.awt.*;
 
-// Tela Principal com Menu
 public class MainView extends JFrame {
 
     public MainView() {
@@ -76,6 +77,7 @@ public class MainView extends JFrame {
     private void abrirVisivel() {
         VisivelView visivelView = new VisivelView();
         visivelView.setVisible(true);
+        Utils.preencherTabela(VisivelView.getTabela());
     }
 
 

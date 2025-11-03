@@ -5,35 +5,35 @@ import view.ConfigView;
 import view.MainView;
 
 import javax.swing.*;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-
             try {
-                if (Utils.procuraConfig() != null){
-                    MainView mainView = new MainView();
-                    mainView.setVisible(true);
+                String configEncontrada = Utils.procuraConfig();
 
-                    String resposta = Utils.procuraConfig();
-                    JOptionPane.showMessageDialog(mainView, resposta);
+                MainView mainView = new MainView();
+                mainView.setVisible(true);
+
+                if (configEncontrada != null) {
+                    JOptionPane.showMessageDialog(mainView, configEncontrada);
+                    if ( Utils.lerAutomatico() ) {
+                        Utils.mantemLendoPastaRotas();
+                    }
+
                 } else {
-                    MainView mainView = new MainView();
-                    mainView.setVisible(true);
                     ConfigView configView = new ConfigView();
                     configView.setVisible(true);
+                    JOptionPane.showMessageDialog(mainView,
+                            "Nenhuma configuração encontrada.\nPor favor, configure o sistema.");
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                JOptionPane.showMessageDialog(null,
+                        "Erro ao carregar configuração: " + e.getMessage(),
+                        "Erro",
+                        JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
             }
         });
     }

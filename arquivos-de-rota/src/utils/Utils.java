@@ -5,26 +5,28 @@ import entities.Config;
 import entities.HashNoCidade;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static entities.Conexao.listaConexoes;
+import static entities.HashNoCidade.criaNoCidade;
+import static entities.HashNoCidade.mapaNoCidade;
+import static view.VisivelView.getTabela;
+
 public class Utils {
 
     /**
      * Read All Lines of file
-     *
-     * @param filePath The name of the file to read
-     * @return All lines of file
-     * @throws IOException Signals that an I/O exception of some sort has occurred.
      */
     public static List<String> readAllLines(String filePath) throws IOException {
         List<String> rows = new ArrayList<String>();
@@ -39,10 +41,6 @@ public class Utils {
 
     /**
      * Validate the file config.txt
-     *
-     * @param configPath Path of config.txt
-     * @return The error or null
-     * @throws IOException Signals thta o I/O of dome dort has occurred
      */
     public static String validateConfig(String pasta, String sucesso, String erro, boolean automatico) throws IOException {
 
@@ -60,7 +58,6 @@ public class Utils {
             } catch (Exception e) {
                 return "Falha ao criar o diretório " + pasta + ": " + e.getMessage();
             }
-
         }
 
         if (!Files.exists(Path.of(sucesso))) {
@@ -69,7 +66,6 @@ public class Utils {
             } catch (Exception e) {
                 return "Falha ao criar o diretório " + sucesso + ": " + e.getMessage();
             }
-
         }
 
         if (!Files.exists(Path.of(erro))) {
@@ -78,14 +74,15 @@ public class Utils {
             } catch (Exception e) {
                 return "Falha ao criar o diretório " + erro + ": " + e.getMessage();
             }
-
         }
 
-        criaConfig(pasta, sucesso, erro, automatico);
         return null;
     }
 
     public static String validateRotaFile(List<String> linhas) {
+
+        List<Integer> nos = new ArrayList<>();
+
         if (linhas == null || linhas.isEmpty()) {
             return "Arquivo rota está em branco.";
         }
@@ -100,7 +97,6 @@ public class Utils {
         }
 
         String header = nonEmpty.get(0);
-
         Pattern headerPattern = Pattern.compile("^00(\\d{2})(\\d{1,5})$");
         Matcher mHeader = headerPattern.matcher(header);
 
@@ -127,10 +123,19 @@ public class Utils {
             if (linha.startsWith("01")) {
                 Pattern p01 = Pattern.compile("^01(\\d{1,2})=(\\d{1,2})$");
                 Matcher m01 = p01.matcher(linha);
-
                 if (!m01.matches()) {
                     return "Mensagem: Resumo de conexões inválido. Linha: '" + linha + "'";
                 }
+                int no1 = Integer.parseInt(m01.group(1));
+                int no2 = Integer.parseInt(m01.group(2));
+
+                if (!nos.contains(no1)) {
+                    nos.add(no1);
+                }
+                if (!nos.contains(no2)) {
+                    nos.add(no2);
+                }
+
                 conexoes.add(linha);
             } else if (linha.startsWith("02")) {
                 Pattern p02 = Pattern.compile("^02(\\d{1,2});(\\d{1,2})=(\\d{1,4})$");
@@ -138,11 +143,16 @@ public class Utils {
                 if (!m02.matches()) {
                     return "Mensagem: Resumo dos pesos inválido. Linha: '" + linha + "'";
                 }
-
                 int peso = Integer.parseInt(m02.group(3));
                 if (peso > 9999) {
                     return "Mensagem: Peso da aresta excede 9999.";
                 }
+                // também registre os nós referenciados nas linhas 02
+                int noOrig = Integer.parseInt(m02.group(1));
+                int noDest = Integer.parseInt(m02.group(2));
+                if (!nos.contains(noOrig)) nos.add(noOrig);
+                if (!nos.contains(noDest)) nos.add(noDest);
+
                 pesos.add(linha);
             } else if (linha.startsWith("09")) {
                 trailer = linha;
@@ -174,16 +184,13 @@ public class Utils {
         }
 
         int somaPesosCalculada = 0;
-
         Pattern p02extract = Pattern.compile("^02(\\d{1,2});(\\d{1,2})=(\\d{1,4})$");
 
-        for (String peso : pesos) {
-            Matcher mt = p02extract.matcher(peso);
-
+        for (String pesoLinha : pesos) {
+            Matcher mt = p02extract.matcher(pesoLinha);
             if (mt.matches()) {
                 int pesoEncontrado = Integer.parseInt(mt.group(3));
                 somaPesosCalculada += pesoEncontrado;
-
             } else {
                 return "Mensagem: Linha de peso com formato inválido durante soma.";
             }
@@ -197,90 +204,53 @@ public class Utils {
             return "Mensagem: Soma dos pesos difere da soma informada no HEADER.";
         }
 
+        /* ---------- AQUI: popula as estruturas do programa ---------- */
+        // cria nós no mapa (se não existirem) usando seu utilitário criaNoCidade
+        for (Integer no : nos) {
+            criaNoCidade(no, " -\t-"); // sua função já cria o par no->cidade no hashmap
+        }
+
+        // a partir das linhas 02, criar objetos Conexao e adicioná-los à lista global,
+        // evitando duplicatas
+        for (String pesoLinha : pesos) {
+            Matcher mt = p02extract.matcher(pesoLinha);
+            if (mt.matches()) {
+                int origem = Integer.parseInt(mt.group(1));
+                int destino = Integer.parseInt(mt.group(2));
+                int peso = Integer.parseInt(mt.group(3));
+
+                // checar duplicata (assumindo equals por origem-destino-peso)
+                boolean existe = false;
+                for (Conexao c : listaConexoes) {
+                    if (c.getNoOrigem().equals(origem) && c.getNoDestino().equals(destino) && c.getPesoConexao().equals(peso)) {
+                        existe = true;
+                        break;
+                    }
+                }
+                if (!existe) {
+                    listaConexoes.add(new Conexao(origem, destino, peso));
+                }
+            }
+        }
+
         return null;
     }
 
-    /*
-    public static void antigoMain() throws IOException {
-
-        String finalCaminhoProcessados = caminhoProcessados;
-        String finalCaminhoNaoProcessados = caminhoNaoProcessados;
-        String finalCaminhoRotas = caminhoRotas;
-
-        int quantityOfThreads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executorThreads = Executors.newFixedThreadPool(quantityOfThreads);
-
-        for (int i = 1; i <= 10; i++) {
-            int rotaIndex = i;
-
-            executorThreads.submit(() -> {
-                try {
-                    Path origemPath = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
-                    if (Files.exists(origemPath) && Files.isRegularFile(origemPath)) {
-                        List<String> linhasRota = readAllLines(origemPath.toString());
-
-                        // valida o arquivo por completo (header, 01, 02, trailer e somas (conexoes e pesos))
-                        String validaRota = validateRotaFile(linhasRota);
-
-                        if (validaRota != null) {
-                            // validação falhou, mover para Não Processado
-
-                            Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                            Files.move(origemPath, destinoNaoProcessado);
-                            System.out.println("Arquivo rota" + rotaIndex + ".txt inválido. Motivo: " + validaRota);
-                        } else {
-                            // tudo certo, mover para Processado
-                            Path destinoProcessado = Paths.get(finalCaminhoProcessados + "/rota" + rotaIndex + ".txt");
-                            Files.move(origemPath, destinoProcessado);
-                            System.out.println("Rota " + rotaIndex + " processada com sucesso!");
-                        }
-                    } else {
-                        // arquivo não existe ou não está correto, mover (se existir) para Não Processado
-                        Path origemErro = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
-                        if (Files.exists(origemErro)) {
-                            Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                            Files.move(origemErro, destinoNaoProcessado);
-                        }
-                    }
-                } catch (Exception e) {
-                    try {
-                        Path origemErro = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
-                        Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                        if (Files.exists(origemErro)) {
-                            Files.move(origemErro, destinoNaoProcessado);
-                        }
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                    System.out.println("Arquivo rota" + rotaIndex + ".txt inválido.");
-                }
-            });
-        }
-        executorThreads.shutdown();
-    }*/
 
     public static String lerArquivoConfig(String configPath) throws IOException {
-
-        String caminhoRotas = "";
-        String caminhoProcessado = "";
-        String caminhoNaoProcessado = "";
-        boolean automatico = false;
-
-        List<String> linhasConfig = new ArrayList<String>();
 
         if (!Files.exists(Path.of(configPath))) {
             return "Arquivo config.txt não encontrado em -> " + configPath;
         }
 
-        linhasConfig = Utils.readAllLines(configPath);
-        List<String> linhasValidas = new ArrayList<String>();
+        List<String> linhasConfig = readAllLines(configPath);
+        List<String> linhasValidas = new ArrayList<>();
 
         for (String linha : linhasConfig) {
             if (linha.contains("@") && !linha.contains("=")) {
                 return "Há um erro de digitação em config.txt";
             }
-
-            if (!linha.trim().equals("") && !linha.trim().isEmpty()) {
+            if (!linha.trim().isEmpty()) {
                 linhasValidas.add(linha);
             }
         }
@@ -293,217 +263,364 @@ public class Utils {
             return "Há linha(s) faltando em config.txt";
         }
 
+        String caminhoRotas = "";
+        String caminhoProcessado = "";
+        String caminhoNaoProcessado = "";
+        boolean automatico = false;
+
+        System.out.println("=== Lendo config.txt ===");
         for (String linha : linhasConfig) {
+            System.out.println("Linha: " + linha);
+
             if (linha.startsWith("Rotas=")) {
                 caminhoRotas = linha.substring("Rotas=".length()).trim();
-                Path pathRotas = Path.of(caminhoRotas);
-                if (!Files.exists(pathRotas)) {
-                    try {
-                        Files.createDirectories(pathRotas);
-                    } catch (IOException e) {
-                        System.err.println("Erro ao criar pasta Rotas: " + e.getMessage());
-                    }
-                }
-            }
-
-            if (linha.startsWith("Processado=")) {
+                System.out.println("  → Rotas: " + caminhoRotas);
+            } else if (linha.startsWith("Processado=")) {
                 caminhoProcessado = linha.substring("Processado=".length()).trim();
-                Path pathProcessado = Path.of(caminhoProcessado);
-                if (!Files.exists(pathProcessado)) {
-                    try {
-                        Files.createDirectories(pathProcessado);
-                    } catch (IOException e) {
-                        System.err.println("Erro ao criar pasta Processado: " + e.getMessage());
-                    }
-                }
-            }
-
-            if (linha.startsWith("NaoProcessado=")) {
+                System.out.println("  → Processado: " + caminhoProcessado);
+            } else if (linha.startsWith("NaoProcessado=")) {
                 caminhoNaoProcessado = linha.substring("NaoProcessado=".length()).trim();
-                Path pathNaoProcessado = Path.of(caminhoNaoProcessado);
-                if (!Files.exists(pathNaoProcessado)) {
-                    try {
-                        Files.createDirectories(pathNaoProcessado);
-                    } catch (IOException e) {
-                        System.err.println("Erro ao criar pasta NaoProcessado: " + e.getMessage());
-                    }
-                }
-            }
-
-            if (linha.startsWith("Automatico=")) {
+                System.out.println("  → NaoProcessado: " + caminhoNaoProcessado);
+            } else if (linha.startsWith("Automatico=")) {
                 String valorAutomatico = linha.substring("Automatico=".length()).trim();
                 automatico = valorAutomatico.equalsIgnoreCase("Sim");
+                System.out.println("  → Automatico: " + automatico);
             }
         }
+        System.out.println("========================");
 
-        validateConfig(caminhoRotas, caminhoProcessado, caminhoNaoProcessado, automatico);
+        // Validar se todos os caminhos foram preenchidos
+        if (caminhoRotas.isEmpty() || caminhoProcessado.isEmpty() || caminhoNaoProcessado.isEmpty()) {
+            return "Erro: Algum caminho não foi configurado corretamente no config.txt";
+        }
 
-        return null;
+        // Criar diretórios se não existirem
+        try {
+            Files.createDirectories(Path.of(caminhoRotas));
+            Files.createDirectories(Path.of(caminhoProcessado));
+            Files.createDirectories(Path.of(caminhoNaoProcessado));
+        } catch (Exception e) {
+            return "Erro ao criar diretórios: " + e.getMessage();
+        }
+
+        // IMPORTANTE: Inicializar Config AQUI
+        Config.iniciaConfig(caminhoRotas, caminhoProcessado, caminhoNaoProcessado, automatico);
+        System.out.println("Config inicializado com sucesso!");
+
+        return null; // Sucesso
     }
 
-
-    public static String procuraConfig () throws IOException {
-
-        String resposta = null;
+    public static String procuraConfig() throws IOException {
         String config = "C:\\Configuracoes\\config.txt";
         Path caminhoConfig = Paths.get(config);
 
         if (Files.exists(caminhoConfig)) {
-            lerArquivoConfig(String.valueOf(caminhoConfig));
+            // Ler e inicializar o Config
+            String resultado = lerArquivoConfig(String.valueOf(caminhoConfig));
 
-            resposta = lerArquivoConfig(String.valueOf(caminhoConfig));
+            // Se houve erro na leitura, retornar o erro
+            if (resultado != null) {
+                return resultado;
+            }
+
+            // Config inicializado com sucesso
             return "Configuração pré-definida encontrada!\nPode ser alterado em " + caminhoConfig;
         }
         return null;
     }
 
-    public static boolean criaConfig (String pasta, String sucesso, String erro, boolean rotaAutomatica) throws IOException {
+    public static boolean criaConfig(String pasta, String sucesso, String erro, boolean rotaAutomatica) throws IOException {
 
-        if ( validateConfig(pasta, sucesso, erro, rotaAutomatica) == null ) {
-            String caminhoConfig = "C:\\Configuracoes\\config.txt";
-
-            if (!Files.exists(Path.of(caminhoConfig))) {
-                Files.createDirectories(Path.of("C:\\Configuracoes"));
-            }
-            String [] linhas = { pasta, sucesso, erro, ""};
-
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminhoConfig, true))) {
-                for ( int i = 0; i < 4; i ++) {
-                    if ( i == 3) {
-                        if ( rotaAutomatica == true ) {
-                            linhas[3] = "Automatico=Sim";
-                        } else {
-                            linhas[3] = "Automatico=Nao";
-                        }
-                    }
-                    writer.write(linhas[i]);
-                    writer.newLine();
-                }
-            } catch (IOException e) {
-                System.err.println("Erro ao escrever no arquivo: " + e.getMessage());
-                e.printStackTrace();
-            }
-
-            Config.iniciaConfig(pasta, sucesso, erro, rotaAutomatica);
-            return true;
+        // Validar primeiro
+        String validacao = validateConfig(pasta, sucesso, erro, rotaAutomatica);
+        if (validacao != null) {
+            return false;
         }
 
-        return false;
-    }
+        String caminhoConfig = "C:\\Configuracoes\\config.txt";
+        Path pathConfig = Path.of("C:\\Configuracoes");
 
-    public static boolean validaNoCidade (Integer no, String cidade) {
+        if (!Files.exists(pathConfig)) {
+            Files.createDirectories(pathConfig);
+        }
 
+        // CORREÇÃO: Adicionar os prefixos corretos
+        String[] linhas = {
+                "Rotas=" + pasta,
+                "Processado=" + sucesso,
+                "NaoProcessado=" + erro,
+                rotaAutomatica ? "Automatico=Sim" : "Automatico=Nao"
+        };
 
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminhoConfig, false))) {
+            for (String linha : linhas) {
+                writer.write(linha);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.err.println("Erro ao escrever no arquivo: " + e.getMessage());
+            return false;
+        }
 
+        // Inicializar Config
+        Config.iniciaConfig(pasta, sucesso, erro, rotaAutomatica);
         return true;
     }
 
-
-    public static void buscarRota(JTextField txtBuscar) throws IOException {
-        String caminhoRota = txtBuscar.toString();
-        List<String> linhasRota = readAllLines(caminhoRota);
-
-        if ( validateRotaFile(linhasRota) == null ) {
-
-        }
+    public static boolean validaNoCidade(Integer no, String cidade) {
+        return true;
     }
 
+    public static void buscarRota(JTextField txtBuscar) throws IOException {
+        String caminhoRota = txtBuscar.getText();
+        List<String> linhasRota = readAllLines(caminhoRota);
 
-    public static String adicionar(String CodigoOrigem, String CidadeOrigem, String CodigoDestino, String CidadeDestino, String KM) {
-
-        Integer noOrigem = Integer.parseInt(CodigoOrigem);
-        Integer noDestino = Integer.parseInt(CodigoDestino);
-        Integer km = Integer.parseInt(KM);
-
-        if ( noOrigem < 1|| CidadeOrigem.isEmpty() ||
-                noDestino < 1 || CidadeDestino.isEmpty() || km <= 0) {
-            return "Preencha todos os campos corretamente antes de adicionar!";
+        if (validateRotaFile(linhasRota) == null) {
+            // Processar rota válida
         }
-
-        if ( validaNoCidade(noOrigem, CidadeOrigem) && validaNoCidade(noDestino, CidadeDestino)) {
-            new Conexao(noOrigem, noOrigem, km);
-        }
-
-        return null;
     }
 
     public static String buscarDiretorio(String caminhoDiretorio) {
 
-        if (Files.exists(Path.of(caminhoDiretorio))) {
-
-            System.out.println(caminhoDiretorio);
-
-            Config config = Config.getConfig();
-
-            String finalCaminhoProcessados = config.getSucesso();
-            String finalCaminhoNaoProcessados = config.getErro();
-            String finalCaminhoRotas = caminhoDiretorio + "\\rota";
-
-            int quantityOfThreads = Runtime.getRuntime().availableProcessors();
-            ExecutorService executorThreads = Executors.newFixedThreadPool(quantityOfThreads);
-
-            for (int i = 1; i <= 10; i++) {
-                int rotaIndex = i;
-
-                executorThreads.submit(() -> {
-                    try {
-                        Path origemPath = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
-                        if (Files.exists(origemPath) && Files.isRegularFile(origemPath)) {
-                            List<String> linhasRota = readAllLines(origemPath.toString());
-
-                            // valida o arquivo por completo (header, 01, 02, trailer e somas (conexoes e pesos))
-                            String validaRota = validateRotaFile(linhasRota);
-
-                            if (validaRota != null) {
-                                // validação falhou, mover para Não Processado
-                                System.out.println("Nao processado");
-                                Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                                System.out.println(destinoNaoProcessado);
-                                Files.move(origemPath, destinoNaoProcessado);
-                                System.out.println("Arquivo rota" + rotaIndex + ".txt inválido. Motivo: " + validaRota);
-                            } else {
-                                // tudo certo, mover para Processado
-                                System.out.println("Processado");
-                                Path destinoProcessado = Paths.get(finalCaminhoProcessados + "/rota" + rotaIndex + ".txt");
-                                Files.move(origemPath, destinoProcessado);
-                                System.out.println("Rota " + rotaIndex + " processada com sucesso!");
-                            }
-                        } else {
-                            // arquivo não existe ou não está correto, mover (se existir) para Não Processado
-                            Path origemErro = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
-                            if (Files.exists(origemErro)) {
-                                Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                                Files.move(origemErro, destinoNaoProcessado);
-                            }
-                        }
-                    } catch (Exception e) {
-                        try {
-                            Path origemErro = Paths.get(finalCaminhoRotas + rotaIndex + ".txt");
-                            Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados + "/rota" + rotaIndex + ".txt");
-                            if (Files.exists(origemErro)) {
-                                Files.move(origemErro, destinoNaoProcessado);
-                            }
-                        } catch (IOException ex) {
-                            throw new RuntimeException(ex);
-                        }
-                        System.out.println("Arquivo rota" + rotaIndex + ".txt inválido.");
-                    }
-                });
-            }
-            executorThreads.shutdown();
-            try {
-                // espera até 3 segundos pelas threads (ajuste conforme necessário)
-                if (!executorThreads.awaitTermination(3, TimeUnit.SECONDS)) {
-                    executorThreads.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executorThreads.shutdownNow();
-            }
-        }
-        else {
+        if (!Files.exists(Path.of(caminhoDiretorio))) {
             return "Pasta não encontrada!";
         }
 
-        return null;
+        System.out.println("Processando diretório: " + caminhoDiretorio);
+
+        Config config;
+        try {
+            config = Config.getConfig();
+        } catch (IllegalStateException e) {
+            return "Erro: Configuração não foi inicializada. Configure o sistema primeiro!";
+        }
+
+        String finalCaminhoProcessados = config.getSucesso();
+        String finalCaminhoNaoProcessados = config.getErro();
+
+        // Debug: Imprimir os caminhos
+        System.out.println("Caminho Processados: " + finalCaminhoProcessados);
+        System.out.println("Caminho Não Processados: " + finalCaminhoNaoProcessados);
+
+        // VALIDAÇÃO: Verificar se os caminhos não são nulos ou vazios
+        if (finalCaminhoProcessados == null || finalCaminhoProcessados.trim().isEmpty()) {
+            return "Erro: Caminho de arquivos processados não configurado!";
+        }
+
+        if (finalCaminhoNaoProcessados == null || finalCaminhoNaoProcessados.trim().isEmpty()) {
+            return "Erro: Caminho de arquivos não processados não configurado!";
+        }
+
+        int quantityOfThreads = Runtime.getRuntime().availableProcessors();
+        ExecutorService executorThreads = Executors.newFixedThreadPool(quantityOfThreads);
+
+        for (int i = 1; i <= 100; i++) {
+            int rotaIndex = i;
+
+            executorThreads.submit(() -> {
+                try {
+                    Path origemPath = Paths.get(caminhoDiretorio, "rota" + rotaIndex + ".txt");
+
+                    if (Files.exists(origemPath) && Files.isRegularFile(origemPath)) {
+                        List<String> linhasRota = readAllLines(origemPath.toString());
+                        String validaRota = validateRotaFile(linhasRota);
+
+                        if (validaRota != null) {
+                            // Validação falhou - mover para NÃO PROCESSADO
+                            Path destinoNaoProcessado = Paths.get(finalCaminhoNaoProcessados, "rota" + rotaIndex + ".txt");
+
+                            // IMPORTANTE: Criar diretório se não existir
+                            if (destinoNaoProcessado.getParent() != null) {
+                                Files.createDirectories(destinoNaoProcessado.getParent());
+                            }
+
+                            Files.move(origemPath, destinoNaoProcessado);
+                            System.out.println("✗ Arquivo rota" + rotaIndex + ".txt inválido. Motivo: " + validaRota);
+                        } else {
+                            // Validação OK - mover para PROCESSADO
+                            Path destinoProcessado = Paths.get(finalCaminhoProcessados, "rota" + rotaIndex + ".txt");
+
+                            // IMPORTANTE: Criar diretório se não existir
+                            if (destinoProcessado.getParent() != null) {
+                                Files.createDirectories(destinoProcessado.getParent());
+                            }
+
+                            Files.move(origemPath, destinoProcessado);
+                            System.out.println("✓ Rota " + rotaIndex + " processada com sucesso!");
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erro ao processar rota" + rotaIndex + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        executorThreads.shutdown();
+        try {
+            // Aumentado timeout para 30 segundos
+            if (!executorThreads.awaitTermination(30, TimeUnit.SECONDS)) {
+                executorThreads.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorThreads.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        return "Processamento concluído!";
     }
+
+    public static void criarRotaNN(String StrNoOrigem, String cidadeOrigem, String StrNoDestino, String cidadeDestino,
+                                   String StrKM) throws IOException {
+
+        Integer noOrigem = Integer.parseInt(StrNoOrigem);
+        Integer noDestino = Integer.parseInt(StrNoDestino);
+        Integer KM = Integer.parseInt(StrKM);
+
+        criaNoCidade(noOrigem, cidadeOrigem);
+        criaNoCidade(noDestino, cidadeDestino);
+
+        String pastaRotas = Config.getPasta();
+        String pastaSucesso = Config.getConfig().getSucesso();
+        String pastaErro = Config.getConfig().getSucesso();
+
+        int contador = 1;
+        while (Files.exists(Paths.get(pastaRotas, "rota" + contador + ".txt")) ||
+                Files.exists(Paths.get(pastaSucesso, "rota" + contador + ".txt")) ||
+                Files.exists(Paths.get(pastaErro, "rota" + contador + ".txt"))
+        ) {
+            contador++;
+        }
+
+        int totalNos = mapaNoCidade.size();
+        String header = String.format("00%02d%05d", totalNos, KM);
+
+        String conexao = String.format("01%s=%s", StrNoOrigem, StrNoDestino);
+
+        String resumoPeso = String.format("02%s;%s=%s", noOrigem, noDestino, StrKM);
+
+        String pesoFormatado = String.format("%04d", KM);
+        String trailer = String.format("09RC=%02d;RP=%02d;%05d", 1, 1, KM);
+
+        String conteudo = String.join("\n",
+                header,
+                conexao,
+                resumoPeso,
+                trailer
+        ) + "\n";
+
+        Path caminhoArquivo = Paths.get(pastaRotas, "rota" + contador + ".txt");
+        Files.writeString(caminhoArquivo, conteudo);
+
+        System.out.println("Rota salva em: " + caminhoArquivo);
+    }
+
+    public static void adicionarTabela(JTable tabela,
+                                       JTextField campoCodigoOrigem,
+                                       JTextField campoCidadeOrigem,
+                                       JTextField campoCodigoDestino,
+                                       JTextField campoCidadeDestino,
+                                       JTextField campoKm) {
+
+        String codigoOrigem = campoCodigoOrigem.getText().trim();
+        String cidadeOrigem = campoCidadeOrigem.getText().trim();
+        String codigoDestino = campoCodigoDestino.getText().trim();
+        String cidadeDestino = campoCidadeDestino.getText().trim();
+        String distancia = campoKm.getText().trim();
+
+        if (codigoOrigem.isEmpty() || cidadeOrigem.isEmpty() ||
+                codigoDestino.isEmpty() || cidadeDestino.isEmpty() || distancia.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Preencha todos os campos antes de adicionar na tabela!");
+            return;
+        }
+
+        Integer noOrigem = Integer.parseInt(codigoOrigem);
+        Integer noDestino = Integer.parseInt(codigoDestino);
+        Integer KM = Integer.parseInt(distancia);
+
+        new Conexao(noOrigem, noDestino, KM);
+
+        DefaultTableModel modelo = (DefaultTableModel) tabela.getModel();
+        modelo.addRow(new Object[]{codigoOrigem, cidadeOrigem, codigoDestino, cidadeDestino, distancia});
+
+        campoCodigoOrigem.setText("");
+        campoCidadeOrigem.setText("");
+        campoCodigoDestino.setText("");
+        campoCidadeDestino.setText("");
+        campoKm.setText("");
+
+        campoCodigoOrigem.requestFocus();
+    }
+
+
+    public static boolean lerAutomatico() {
+
+        Config config = Config.getConfig();
+
+        return config.isAutomatico();
+
+    }
+
+    public static void mantemLendoPastaRotas() {
+
+        Timer temporizador = new Timer();
+
+        TimerTask tarefa = new TimerTask() {
+            @Override
+            public void run() {
+                buscarDiretorio(Config.getPasta());
+                preencherTabela(getTabela());
+                System.out.println("Lendo pasta " + Config.getPasta());
+            }
+        };
+
+        temporizador.scheduleAtFixedRate(tarefa, 0, 10000);
+    }
+
+    public static void preencherTabela(JTable tabela) {
+        /*
+        if (mapaNoCidade.isEmpty() || listaConexoes.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Não há dados para exibir na tabela!");
+            return;
+        }*/
+
+
+        System.out.println("➡️ Preenchendo tabela...");
+
+        if (tabela == null) {
+            System.out.println("❌ A tabela é nula!");
+            return;
+        }
+
+        System.out.println("✔️ Tabela OK");
+        System.out.println("listaConexoes tamanho: " + listaConexoes.size());
+        System.out.println("mapaNoCidade tamanho: " + mapaNoCidade.size());
+
+
+        DefaultTableModel modelo = (DefaultTableModel) tabela.getModel();
+        modelo.setRowCount(0);
+
+        for (Map.Entry<Integer, String> entrada : mapaNoCidade.entrySet()) {
+            Integer noOrigem = entrada.getKey();
+            String cidadeOrigem = entrada.getValue();
+
+            for (Conexao conexao : listaConexoes) {
+                if (conexao.getNoOrigem().equals(noOrigem)) {
+                    Integer noDestino = conexao.getNoDestino();
+                    String cidadeDestino = mapaNoCidade.getOrDefault(noDestino, "-");
+                    Integer peso = conexao.getPesoConexao();
+
+                    modelo.addRow(new Object[]{
+                            noOrigem,
+                            cidadeOrigem,
+                            noDestino,
+                            cidadeDestino,
+                            peso
+                    });
+                }
+            }
+        }
+
+    }
+
 }

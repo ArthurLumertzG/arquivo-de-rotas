@@ -5,8 +5,11 @@ import utils.Utils;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 
-class VisivelView extends JFrame {
+public class VisivelView extends JFrame {
+
+    private static JTable tabela;
 
     public VisivelView() {
         createComponents();
@@ -139,29 +142,42 @@ class VisivelView extends JFrame {
         txfKM.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
         mainPanel.add(txfKM);
 
+        String[] colunas = {"Código Origem", "Cidade Origem", "Código Destino", "Cidade Destino", "Distância"};
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(colunas, 0);
+
+        tabela = new JTable(model);
+        tabela.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tabela.setRowHeight(22);
+        tabela.getTableHeader().setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tabela.getTableHeader().setBackground(new Color(230, 235, 240));
+        tabela.getTableHeader().setReorderingAllowed(false);
+
+        JScrollPane scrollPane = new JScrollPane(tabela);
+        scrollPane.setBounds(45, 240, 620, 300);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
+        mainPanel.add(scrollPane);
+
         JButton btnAdicionar = new JButton("+");
         btnAdicionar.setBounds(620, 195, 45, 26);
         btnAdicionar.setFont(new Font("Arial", Font.BOLD, 16));
         btnAdicionar.setFocusPainted(false);
         btnAdicionar.setBackground(new Color(240, 240, 240));
         btnAdicionar.setBorder(BorderFactory.createLineBorder(new Color(160, 160, 160), 1));
-        btnAdicionar.addActionListener( e -> Utils.adicionar(txfCodigoOrigem.getText(), txfCidadeOrigem.getText(), txfCodigoDestino.getText(), txfCidadeDestino.getText(), txfKM.getText()));
+        btnAdicionar.addActionListener( e -> {
+            try {
+                Utils.criarRotaNN(txfCodigoOrigem.getText(), txfCidadeOrigem.getText(), txfCodigoDestino.getText(),
+                        txfCidadeDestino.getText(), txfKM.getText());
+                Utils.adicionarTabela(tabela,
+                        txfCodigoOrigem,
+                        txfCidadeOrigem,
+                        txfCodigoDestino,
+                        txfCidadeDestino,
+                        txfKM);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         mainPanel.add(btnAdicionar);
-
-        String[] colunas = {"Código Origem", "Cidade Origem", "Código Destino", "Cidade Destino", "Distância"};
-        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(colunas, 0);
-
-        JTable table = new JTable(model);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        table.setRowHeight(22);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        table.getTableHeader().setBackground(new Color(230, 235, 240));
-        table.getTableHeader().setReorderingAllowed(false);
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(45, 240, 620, 300);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        mainPanel.add(scrollPane);
 
         JButton btnSalvar = new JButton("SALVAR");
         btnSalvar.setBounds(445, 555, 105, 30);
@@ -184,4 +200,7 @@ class VisivelView extends JFrame {
         add(mainPanel);
     }
 
+    public static JTable getTabela() {
+        return tabela;
+    }
 }
