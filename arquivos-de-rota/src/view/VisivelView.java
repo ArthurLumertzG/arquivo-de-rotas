@@ -1,11 +1,16 @@
 package view;
 
+import djkstra.AlgoritmoDjikstra;
 import utils.Utils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+
+import static entities.Conexao.listaConexoes;
+import static entities.HashNoCidade.mapaNoCidade;
 
 public class VisivelView extends JFrame {
 
@@ -185,7 +190,20 @@ public class VisivelView extends JFrame {
         btnSalvar.setFocusPainted(false);
         btnSalvar.setBackground(new Color(240, 240, 240));
         btnSalvar.setBorder(BorderFactory.createLineBorder(new Color(160, 160, 160), 1));
-       // btnSalvar.addActionListener(e -> );
+        btnSalvar.addActionListener(e -> {
+            try {
+                Utils.criarRotaNN(txfCodigoOrigem.getText(), txfCidadeOrigem.getText(), txfCodigoDestino.getText(),
+                        txfCidadeDestino.getText(), txfKM.getText());
+                Utils.adicionarTabela(tabela,
+                        txfCodigoOrigem,
+                        txfCidadeOrigem,
+                        txfCodigoDestino,
+                        txfCidadeDestino,
+                        txfKM);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         mainPanel.add(btnSalvar);
 
         JButton btnProcessar = new JButton("PROCESSAR");
@@ -194,7 +212,41 @@ public class VisivelView extends JFrame {
         btnProcessar.setFocusPainted(false);
         btnProcessar.setBackground(new Color(240, 240, 240));
         btnProcessar.setBorder(BorderFactory.createLineBorder(new Color(160, 160, 160), 1));
-        //btnProcessar.addActionListener(e -> );
+        btnProcessar.addActionListener(e -> {
+            try {
+                if (listaConexoes == null || listaConexoes.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Nenhuma conexão foi carregada. Leia as rotas primeiro!");
+                    return;
+                }
+
+                int noOrigem = Integer.parseInt(
+                        JOptionPane.showInputDialog(this, "Insira o código do nó de origem:")
+                );
+                int noDestino = Integer.parseInt(
+                        JOptionPane.showInputDialog(this, "Insira o código do nó de destino:")
+                );
+
+                // Executa o algoritmo de Dijkstra
+                AlgoritmoDjikstra.ResultadoCaminho resultado = AlgoritmoDjikstra.calcular(listaConexoes, noOrigem, noDestino);
+
+                // Monta a string de resultado
+                StringBuilder sb = new StringBuilder("Menor caminho:\n");
+                for (Integer no : resultado.getCaminho()) {
+                    String cidade = mapaNoCidade.getOrDefault(no, "Desconhecida");
+                    sb.append(no).append(" (").append(cidade).append(") → ");
+                }
+                sb.append("Fim\n");
+                sb.append("Custo total: ").append(resultado.getCustoTotal());
+
+                JOptionPane.showMessageDialog(this, sb.toString(), "Resultado do Caminho Mínimo", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Os nós devem ser números inteiros válidos.", "Erro de entrada", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Erro ao calcular o caminho: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        });
         mainPanel.add(btnProcessar);
 
         add(mainPanel);

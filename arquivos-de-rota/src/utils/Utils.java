@@ -206,8 +206,8 @@ public class Utils {
 
         /* ---------- AQUI: popula as estruturas do programa ---------- */
         // cria nós no mapa (se não existirem) usando seu utilitário criaNoCidade
-        for (Integer no : nos) {
-            criaNoCidade(no, " -\t-"); // sua função já cria o par no->cidade no hashmap
+        for (Integer no : new ArrayList<>(nos)) {
+            criaNoCidade(no, " --"); // sua função já cria o par no->cidade no hashmap
         }
 
         // a partir das linhas 02, criar objetos Conexao e adicioná-los à lista global,
@@ -220,15 +220,18 @@ public class Utils {
                 int peso = Integer.parseInt(mt.group(3));
 
                 // checar duplicata (assumindo equals por origem-destino-peso)
-                boolean existe = false;
+                boolean jaExiste = false;
                 for (Conexao c : listaConexoes) {
-                    if (c.getNoOrigem().equals(origem) && c.getNoDestino().equals(destino) && c.getPesoConexao().equals(peso)) {
-                        existe = true;
+                    boolean mesma = (c.getNoOrigem().equals(origem) && c.getNoDestino().equals(destino)) ||
+                            (c.getNoOrigem().equals(destino) && c.getNoDestino().equals(origem));
+                    if (mesma && c.getPesoConexao().equals(peso)) {
+                        jaExiste = true;
                         break;
                     }
                 }
-                if (!existe) {
-                    listaConexoes.add(new Conexao(origem, destino, peso));
+
+                if (!jaExiste) {
+                    new Conexao(origem, destino, peso);
                 }
             }
         }
@@ -578,12 +581,6 @@ public class Utils {
     }
 
     public static void preencherTabela(JTable tabela) {
-        /*
-        if (mapaNoCidade.isEmpty() || listaConexoes.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Não há dados para exibir na tabela!");
-            return;
-        }*/
-
 
         System.out.println("➡️ Preenchendo tabela...");
 
@@ -596,31 +593,28 @@ public class Utils {
         System.out.println("listaConexoes tamanho: " + listaConexoes.size());
         System.out.println("mapaNoCidade tamanho: " + mapaNoCidade.size());
 
-
         DefaultTableModel modelo = (DefaultTableModel) tabela.getModel();
         modelo.setRowCount(0);
 
-        for (Map.Entry<Integer, String> entrada : mapaNoCidade.entrySet()) {
-            Integer noOrigem = entrada.getKey();
-            String cidadeOrigem = entrada.getValue();
+        for (Conexao conexao : listaConexoes) {
+            Integer noOrigem = conexao.getNoOrigem();
+            Integer noDestino = conexao.getNoDestino();
 
-            for (Conexao conexao : listaConexoes) {
-                if (conexao.getNoOrigem().equals(noOrigem)) {
-                    Integer noDestino = conexao.getNoDestino();
-                    String cidadeDestino = mapaNoCidade.getOrDefault(noDestino, "-");
-                    Integer peso = conexao.getPesoConexao();
+            String cidadeOrigem = mapaNoCidade.getOrDefault(noOrigem, "--");
+            String cidadeDestino = mapaNoCidade.getOrDefault(noDestino, "--");
+            Integer peso = conexao.getPesoConexao();
 
-                    modelo.addRow(new Object[]{
-                            noOrigem,
-                            cidadeOrigem,
-                            noDestino,
-                            cidadeDestino,
-                            peso
-                    });
-                }
-            }
+            modelo.addRow(new Object[]{
+                    noOrigem,
+                    cidadeOrigem,
+                    noDestino,
+                    cidadeDestino,
+                    peso
+            });
         }
 
+        System.out.println("✔️ Tabela preenchida com " + modelo.getRowCount() + " linhas");
     }
+
 
 }
