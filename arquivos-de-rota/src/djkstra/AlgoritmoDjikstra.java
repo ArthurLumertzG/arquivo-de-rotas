@@ -22,6 +22,14 @@ public class AlgoritmoDjikstra {
             naoVisitados.add(c.getNoDestino());
         }
 
+        if (!naoVisitados.contains(noOrigem)) {
+            throw new Error ("Nó de origem não existe no grafo.");
+        }
+
+        if (!naoVisitados.contains(noDestino)) {
+            throw new Error ("Nó de destino não existe no grafo.");
+        }
+
         for (Integer no : naoVisitados) {
             custo.put(no, Integer.MAX_VALUE);
             antecessor.put(no, -1);
