@@ -23,7 +23,7 @@ public class Config {
 
     public static Config getConfig() {
         if (config == null) {
-            throw new IllegalStateException("Config não foi inicializada. Use iniciaConfig primeiro.");
+            throw new IllegalStateException("Config não foi inicializada. Use iniciaConfig() primeiro.");
         }
         return config;
     }

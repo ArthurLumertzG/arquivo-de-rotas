@@ -2,7 +2,6 @@ package utils;
 
 import entities.Conexao;
 import entities.Config;
-import entities.HashNoCidade;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -15,6 +14,7 @@ import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -600,9 +600,18 @@ public class Utils {
             Integer noOrigem = conexao.getNoOrigem();
             Integer noDestino = conexao.getNoDestino();
 
-            String cidadeOrigem = mapaNoCidade.getOrDefault(noOrigem, "--");
-            String cidadeDestino = mapaNoCidade.getOrDefault(noDestino, "--");
+            AtomicReference<String> cidadeOrigem = new AtomicReference<>(mapaNoCidade.getOrDefault(noOrigem, "--"));
+            AtomicReference<String> cidadeDestino = new AtomicReference<>(mapaNoCidade.getOrDefault(noDestino, "--"));
             Integer peso = conexao.getPesoConexao();
+
+            mapaNoCidade.forEach( (chave, valor) -> {
+                if (noOrigem == chave) {
+                    cidadeOrigem.set(valor);
+                }
+                if (noDestino == chave) {
+                    cidadeDestino.set(valor);
+                }
+            }) ;
 
             modelo.addRow(new Object[]{
                     noOrigem,

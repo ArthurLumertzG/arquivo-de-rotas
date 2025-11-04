@@ -1,6 +1,9 @@
 package djkstra;
 
 import entities.Conexao;
+import view.MainView;
+
+import javax.swing.*;
 import java.util.*;
 
 public class AlgoritmoDjikstra {
@@ -23,10 +26,12 @@ public class AlgoritmoDjikstra {
         }
 
         if (!naoVisitados.contains(noOrigem)) {
+            JOptionPane.showMessageDialog(null, "Escolha um nó existente!");
             throw new Error ("Nó de origem não existe no grafo.");
         }
 
         if (!naoVisitados.contains(noDestino)) {
+            JOptionPane.showMessageDialog(null, "Escolha um nó existente!");
             throw new Error ("Nó de destino não existe no grafo.");
         }
 
